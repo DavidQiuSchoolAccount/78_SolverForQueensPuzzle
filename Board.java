@@ -10,14 +10,9 @@ public class Board implements Cloneable {
 	private int size;
 
 	/**
-	 * The current rank. The next queen will be added in this rank.
+	 * The current rank. The next queen will be placed on this rank.
 	 */
 	private int rank = 0;
-
-	/**
-	 * Whether the board is in a conflict state - that is, two queens attack each other.
-	 */
-	private boolean conflict = false;;
 
 	/**
 	 * Indexes the file of each queen by rank. In other words, if queens[rank] == file, there is a queen
@@ -44,6 +39,7 @@ public class Board implements Cloneable {
 
 	/**
 	 * Constructs an empty board of a given size.
+	 *
 	 * @param size The number of ranks (and files) of the board.
 	 */
 	public Board(int size) {
@@ -59,12 +55,12 @@ public class Board implements Cloneable {
 
 	/**
 	 * Constructs a Board as a copy of another Board.
+	 *
 	 * @param other The other Board.
 	 */
 	public Board(Board other) {
 		size = other.size;
 		rank = other.rank;
-		conflict = other.conflict;
 		queens = other.queens.clone();
 		files = other.files.clone();
 		leftDiagonals = other.leftDiagonals.clone();
@@ -72,39 +68,39 @@ public class Board implements Cloneable {
 	}
 
 	/**
-	 * Adds a new queen to the current rank in the given file.
+	 * Places a new queen to the current rank in the given file.
+	 * Returns false if this is not possible.
+	 *
 	 * @param file A file number, from 0 to getSize() - 1.
 	 */
-	public void add(int file) {
+	public boolean place(int file) {
 		if(file >= size) { throw new IllegalArgumentException("Invalid file number!"); }
-		else if(rank >= size) { throw new IllegalStateException("Cannot add a queen when the board is full!"); }
-		else if(conflict) { throw new IllegalStateException("Cannot add a queen when the board is in a conflict state!"); }
+		else if(rank >= size) { throw new IllegalStateException("Cannot place a queen when the board is full!"); }
 
 		int leftDiagonal  = getLeftDiagonal(rank, file);
 		int rightDiagonal = getRightDiagonal(rank, file);
 
 		if(files[file] || leftDiagonals[leftDiagonal] || rightDiagonals[rightDiagonal]) {
-			conflict = true;
+			return false;
 		}
 
 		queens[rank] = file;
 		files[file] = leftDiagonals[leftDiagonal] = rightDiagonals[rightDiagonal] = true;
 		rank++;
+		return true;
 	}
 
 	/**
-	 * Removes the most recently added queen. The state of the board is reset as if the insertion never occurred.
+	 * Removes the most recently placed queen. The state of the board is reset as if the insertion never occurred.
 	 */
 	public void undo() {
 		if(rank <= 0) { throw new IllegalStateException("No moves to undo!"); }
 
+		rank--;
 		int file = queens[rank];
 		int leftDiagonal  = getLeftDiagonal(rank, file);
 		int rightDiagonal = getRightDiagonal(rank, file);
-
 		files[file] = leftDiagonals[leftDiagonal] = rightDiagonals[rightDiagonal] = false;
-		conflict = false;
-		rank--;
 	}
 
 	@Override
@@ -131,7 +127,6 @@ public class Board implements Cloneable {
 		result += "Size: " + size + "\n";
 		result += "Current rank: " + rank + "\n";
 		result += (isSolved() ? "SOLVED!" : "Unsolved.") + "\n";
-		result += (conflict ? "CONFLICT!" : "No conflicts.") + "\n";
 		return result;
 	}
 
@@ -141,18 +136,10 @@ public class Board implements Cloneable {
 	}
 
 	/**
-	 * Returns whether the current board state is a solution. All ranks must be filled, and there cannot
-	 * be any conflicts.
+	 * Returns whether the current board state is a solution. All ranks must be filled.
 	 */
 	public boolean isSolved() {
-		return rank >= size && !conflict;
-	}
-
-	/**
-	 * Returns whether the last-added queen introduced a conflict.
-	 */
-	public boolean hasConflict() {
-		return conflict;
+		return rank >= size;
 	}
 
 	/**
@@ -163,7 +150,7 @@ public class Board implements Cloneable {
 	}
 
 	/**
-	 * Returns the current rank – the one the next queen will be added to.
+	 * Returns the current rank - the one the next queen will be placed on.
 	 */
 	public int getCurrentRank() {
 		return rank;
